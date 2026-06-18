@@ -36,19 +36,24 @@ In the Google Sheet, click **Share** and add that email as an **Editor**.
 
 ## 4. Provide the credentials to the server
 
-Pick one option in `server/.env`:
+Credentials are loaded **lazily** (`loadServiceAccount()` in `server/src/config.ts`):
+`GOOGLE_SERVICE_ACCOUNT_JSON` is checked first, then `GOOGLE_SERVICE_ACCOUNT_FILE`.
 
-**Local dev (file):**
+**Local dev — file (easiest):** in `server/.env`
 ```
 GOOGLE_SERVICE_ACCOUNT_FILE=./google-service-account.json
 ```
 Place the JSON key file at `server/google-service-account.json` (it's git-ignored).
 
-**Cloud host (inline):**
+**Vercel / any cloud host — inline JSON (required):** there is **no filesystem** on
+serverless, so the file option does not work. Set an env var to the **entire** key
+JSON on one line:
 ```
-GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account", ... }
+GOOGLE_SERVICE_ACCOUNT_JSON={"type":"service_account","project_id":"…","client_email":"…","private_key":"-----BEGIN PRIVATE KEY-----\n…\n-----END PRIVATE KEY-----\n", …}
 ```
-Paste the whole JSON on one line.
+The `\n` escapes inside `private_key` are handled automatically. If a key is missing
+or unreadable, `GET /api/health` returns `{ "ok": false, "error": … }` instead of the
+function crashing — use it to diagnose.
 
 Also set:
 ```

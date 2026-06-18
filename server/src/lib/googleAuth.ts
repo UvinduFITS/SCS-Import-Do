@@ -5,15 +5,16 @@
  */
 
 import { GoogleAuth } from 'google-auth-library';
-import { config } from '../config.js';
+import { loadServiceAccount } from '../config.js';
 
 export const GOOGLE_SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 function createAuth() {
+  const creds = loadServiceAccount();
   return new GoogleAuth({
     credentials: {
-      client_email: config.google.credentials.client_email,
-      private_key: config.google.credentials.private_key,
+      client_email: creds.client_email,
+      private_key: creds.private_key,
     },
     scopes: GOOGLE_SCOPES,
   });

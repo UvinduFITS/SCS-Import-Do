@@ -31,6 +31,24 @@ export function getSheetsApi(): sheets_v4.Sheets {
   return sheetsClient;
 }
 
+/**
+ * Health probe: authenticate (lazy creds) and read the configured spreadsheet's
+ * metadata. Returns a result object (never throws) for /api/health.
+ */
+export async function checkSheetAccess(): Promise<
+  { ok: true; title?: string } | { ok: false; error: string }
+> {
+  try {
+    const res = await getSheetsApi().spreadsheets.get({
+      spreadsheetId: config.google.sheetId,
+      fields: 'properties.title',
+    });
+    return { ok: true, title: res.data.properties?.title ?? undefined };
+  } catch (err) {
+    return { ok: false, error: (err as Error).message };
+  }
+}
+
 /** Convert a 1-based column index to an A1 column letter (1 -> A, 27 -> AA). */
 export function columnLetter(index: number): string {
   let n = index;

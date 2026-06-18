@@ -35,28 +35,44 @@ export interface ServiceAccountCredentials {
   [key: string]: unknown;
 }
 
+let cachedCreds: ServiceAccountCredentials | null = null;
+
 /**
- * Load Google service-account credentials from either the inline JSON env var
- * or a key file on disk. Inline JSON takes precedence.
+ * Load Google service-account credentials. LAZY + cached — called on first use,
+ * never at module import — so a missing/invalid key surfaces as a clean runtime
+ * error (returned as JSON, e.g. from /api/health) instead of crashing the whole
+ * serverless function at startup.
+ *
+ * Source order:
+ *   1. GOOGLE_SERVICE_ACCOUNT_JSON — the full key JSON in an env var (production / Vercel)
+ *   2. GOOGLE_SERVICE_ACCOUNT_FILE — path to a key file on disk (LOCAL DEV ONLY; there
+ *      is no filesystem on Vercel serverless)
+ * Throws a descriptive error if neither is available.
  */
-function loadServiceAccount(): ServiceAccountCredentials {
+export function loadServiceAccount(): ServiceAccountCredentials {
+  if (cachedCreds) return cachedCreds;
+
   const inline = optional('GOOGLE_SERVICE_ACCOUNT_JSON');
   const file = optional('GOOGLE_SERVICE_ACCOUNT_FILE');
 
-  let raw: string | undefined;
+  let raw: string;
   if (inline) {
-    raw = inline;
+    raw = inline; // production / Vercel
   } else if (file) {
     try {
-      raw = readFileSync(resolve(process.cwd(), file), 'utf8');
+      raw = readFileSync(resolve(process.cwd(), file), 'utf8'); // local dev only
     } catch (err) {
       throw new Error(
-        `Could not read GOOGLE_SERVICE_ACCOUNT_FILE at "${file}": ${(err as Error).message}`,
+        `GOOGLE_SERVICE_ACCOUNT_FILE is set to "${file}" but the file could not be read ` +
+          `(${(err as Error).message}). On Vercel/production there is no filesystem — set ` +
+          `GOOGLE_SERVICE_ACCOUNT_JSON (the full key JSON on one line) instead.`,
       );
     }
   } else {
     throw new Error(
-      'Provide Google credentials via GOOGLE_SERVICE_ACCOUNT_JSON or GOOGLE_SERVICE_ACCOUNT_FILE. See docs/GOOGLE_SHEETS_SETUP.md',
+      'No Google service-account credentials configured. Set GOOGLE_SERVICE_ACCOUNT_JSON ' +
+        '(full key JSON — recommended for Vercel/production) or, for local dev only, ' +
+        'GOOGLE_SERVICE_ACCOUNT_FILE (path to the key file). See docs/GOOGLE_SHEETS_SETUP.md.',
     );
   }
 
@@ -64,14 +80,19 @@ function loadServiceAccount(): ServiceAccountCredentials {
   try {
     parsed = JSON.parse(raw);
   } catch {
-    throw new Error('Google service-account credentials are not valid JSON.');
+    throw new Error(
+      'Google service-account credentials are not valid JSON. For GOOGLE_SERVICE_ACCOUNT_JSON, ' +
+        'paste the entire key-file contents as a single line.',
+    );
   }
 
   if (!parsed.client_email || !parsed.private_key) {
-    throw new Error('Google service-account JSON is missing client_email / private_key.');
+    throw new Error('Google service-account JSON is missing "client_email" / "private_key".');
   }
-  // Normalise escaped newlines that frequently appear in env-var-embedded keys.
+  // Env vars often store the private key with escaped "\n" — restore real newlines.
   parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+
+  cachedCreds = parsed;
   return parsed;
 }
 
@@ -88,7 +109,8 @@ export const config = {
     sheetTab: optional('GOOGLE_SHEET_TAB', 'SCS_IMPORT_DO_HISTORY'),
     // Users/login live in this tab of the same spreadsheet (bcrypt password hashes).
     usersTab: optional('GOOGLE_USERS_TAB', 'USERS'),
-    credentials: loadServiceAccount(),
+    // NOTE: credentials are loaded lazily via loadServiceAccount() (above), NOT here,
+    // so a bad/missing key doesn't crash the function at import.
     // The Slides template id, passed to the Apps Script web app to fill + export.
     slidesTemplateId: optional('GOOGLE_SLIDES_TEMPLATE_ID'),
   },

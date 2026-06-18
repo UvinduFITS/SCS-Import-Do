@@ -6,11 +6,11 @@
  *   npm run check:google -w server
  */
 
-import { config } from '../config.js';
+import { config, loadServiceAccount } from '../config.js';
 import { ensureSheetReady } from '../services/sheets.js';
 
 async function main() {
-  const email = config.google.credentials.client_email;
+  const email = loadServiceAccount().client_email;
   console.log(`\nService account: ${email}`);
   console.log('Share the history Sheet with THIS email as "Editor".\n');
 

@@ -16,18 +16,23 @@ a clear message if a required value is missing.
 | `PORT` | no | `4000` | Port the API listens on |
 | `NODE_ENV` | no | `development` | `development` / `production` |
 | `CORS_ORIGIN` | no | `http://localhost:5173` | Comma-separated list of allowed frontend origins |
-| `GOOGLE_SHEET_ID` | **yes** | — | Spreadsheet ID from its URL |
-| `GOOGLE_SHEET_TAB` | no | `SCS_IMPORT_DO_HISTORY` | Worksheet/tab name (auto-created if missing) |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` | yes* | — | Inline service-account JSON (recommended for cloud hosts) |
-| `GOOGLE_SERVICE_ACCOUNT_FILE` | yes* | — | Path to a service-account key file (recommended for local dev) |
-| `PORTANT_WEBHOOK_URL` | **yes** | — | Portant webhook endpoint (server-side only) |
-| `PORTANT_TIMEOUT_MS` | no | `30000` | Per-attempt timeout for Portant calls |
-| `PORTANT_MAX_RETRIES` | no | `3` | Retry attempts on Portant failure |
-| `PORTANT_PDF_URL_PATH` | no | — | Dotted path to the PDF URL in Portant's response (e.g. `data.url`). Common keys are auto-detected if omitted |
+| `JWT_SECRET` | **yes** | — | Secret used to sign login tokens (long random string) |
+| `JWT_EXPIRES_IN` | no | `7d` | Login token lifetime |
+| `GOOGLE_SHEET_ID` | **yes** | — | Spreadsheet ID from its URL (records + USERS tabs) |
+| `GOOGLE_SHEET_TAB` | no | `SCS_IMPORT_DO_HISTORY` | Records/history tab (auto-created locally) |
+| `GOOGLE_USERS_TAB` | no | `USERS` | Users/login tab (auto-created locally) |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | yes* | — | **Full** service-account JSON on one line. **Use this on Vercel / any serverless or cloud host** (no filesystem there) |
+| `GOOGLE_SERVICE_ACCOUNT_FILE` | yes* | — | Path to a service-account key file. **LOCAL DEV ONLY** — git-ignored, not deployed |
+| `GOOGLE_SLIDES_TEMPLATE_ID` | for PDF | — | Slides template id (filled by the Apps Script web app) |
+| `APPS_SCRIPT_URL` | for PDF | — | Apps Script web-app URL (`…/exec`) |
+| `APPS_SCRIPT_SECRET` | for PDF | — | Shared secret matching `apps-script/Code.gs` |
 | `LOG_LEVEL` | no | `info` | `debug` / `info` / `warn` / `error` |
 
 \* Provide **one** of `GOOGLE_SERVICE_ACCOUNT_JSON` or `GOOGLE_SERVICE_ACCOUNT_FILE`.
-Inline JSON takes precedence.
+`GOOGLE_SERVICE_ACCOUNT_JSON` is checked first. On Vercel you **must** use the JSON
+env var — the file option only works for local development. Credentials are loaded
+lazily, so a bad/missing key returns a clean error from `GET /api/health` rather than
+crashing the server.
 
 ### Client variables (`client/.env`, optional — these are PUBLIC)
 
