@@ -1,0 +1,39 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+# Generated serverless bundle (built by scripts/build-api.mjs on deploy)
+api/_app.mjs
+
+# Vercel
+.vercel
+
+# Environment / secrets — NEVER commit these
+.env
+.env.local
+.env.*.local
+server/.env
+client/.env
+google-service-account.json
+*service-account*.json
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# Misc
+coverage/
+.cache/

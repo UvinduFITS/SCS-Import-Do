@@ -1,0 +1,12 @@
+# Never upload secrets to Vercel — set these as Environment Variables in the
+# Vercel dashboard instead.
+.env
+server/.env
+client/.env
+google-service-account.json
+*service-account*.json
+
+# Local-only
+boot.log
+devrun.log
+docs/

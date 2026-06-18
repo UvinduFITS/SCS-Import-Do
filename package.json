@@ -1,0 +1,30 @@
+{
+  "name": "scs-import-do",
+  "version": "1.0.0",
+  "private": true,
+  "description": "SCS IMPORT DO — Import Delivery Order management with reusable history (Google Sheets) and Portant PDF generation",
+  "type": "module",
+  "workspaces": [
+    "shared",
+    "server",
+    "client"
+  ],
+  "scripts": {
+    "dev": "concurrently -n server,client -c blue,green \"npm:dev:server\" \"npm:dev:client\"",
+    "dev:server": "npm run dev -w server",
+    "dev:client": "npm run dev -w client",
+    "build": "npm run build -w client",
+    "build:api": "node scripts/build-api.mjs",
+    "build:vercel": "npm run build -w client && npm run build:api",
+    "start": "npm run start -w server",
+    "typecheck": "npm run typecheck -w shared && npm run typecheck -w server && npm run typecheck -w client",
+    "lint": "echo \"(add eslint if desired)\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "esbuild": "^0.23.1"
+  },
+  "engines": {
+    "node": ">=18.17"
+  }
+}
