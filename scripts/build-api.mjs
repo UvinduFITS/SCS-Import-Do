@@ -1,7 +1,7 @@
 /**
  * Bundle the Express app (server/src/app.ts + @scs/shared) into a single
  * self-contained ESM file at api/_app.mjs, which the Vercel serverless function
- * (api/[...path].ts) imports. npm deps stay external — Vercel includes them from
+ * (api/index.ts) imports. npm deps stay external — Vercel includes them from
  * node_modules. This avoids Vercel having to resolve the monorepo TypeScript.
  */
 

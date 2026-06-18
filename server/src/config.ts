@@ -7,16 +7,6 @@ import 'dotenv/config';
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-function required(name: string): string {
-  const value = process.env[name];
-  if (!value || value.trim() === '') {
-    throw new Error(
-      `Missing required environment variable: ${name}. See .env.example / docs/ENVIRONMENT_SETUP.md`,
-    );
-  }
-  return value.trim();
-}
-
 function optional(name: string, fallback = ''): string {
   const value = process.env[name];
   return value && value.trim() !== '' ? value.trim() : fallback;
@@ -27,6 +17,21 @@ function optionalNumber(name: string, fallback: number): number {
   if (!raw || raw.trim() === '') return fallback;
   const n = Number(raw);
   return Number.isFinite(n) ? n : fallback;
+}
+
+/**
+ * Env vars the app must have to actually serve requests. These are read with
+ * `optional()` below (NOT validated at import) so a missing value never throws
+ * while the module loads — which on Vercel would crash the whole serverless
+ * function and make every /api/* route return an HTML error page (the client
+ * then fails with "Unexpected token … is not valid JSON"). Instead, callers use
+ * getMissingEnv() to surface a clean JSON error (e.g. from GET /api/health).
+ */
+const REQUIRED_ENV = ['GOOGLE_SHEET_ID', 'JWT_SECRET'] as const;
+
+/** Names of required env vars that are missing/empty. Empty array = all present. */
+export function getMissingEnv(): string[] {
+  return REQUIRED_ENV.filter((name) => !optional(name));
 }
 
 export interface ServiceAccountCredentials {
@@ -105,7 +110,8 @@ export const config = {
     .filter(Boolean),
 
   google: {
-    sheetId: required('GOOGLE_SHEET_ID'),
+    // Read lazily-safe (see getMissingEnv). Missing -> /api/health reports it as JSON.
+    sheetId: optional('GOOGLE_SHEET_ID'),
     sheetTab: optional('GOOGLE_SHEET_TAB', 'SCS_IMPORT_DO_HISTORY'),
     // Users/login live in this tab of the same spreadsheet (bcrypt password hashes).
     usersTab: optional('GOOGLE_USERS_TAB', 'USERS'),
@@ -124,7 +130,8 @@ export const config = {
   },
 
   auth: {
-    jwtSecret: required('JWT_SECRET'),
+    // Read lazily-safe (see getMissingEnv). Missing -> /api/health reports it as JSON.
+    jwtSecret: optional('JWT_SECRET'),
     jwtExpiresIn: optional('JWT_EXPIRES_IN', '7d'),
     // First-run admin seed: created automatically if the USERS tab is empty.
     bootstrapAdmin: {

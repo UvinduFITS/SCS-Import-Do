@@ -6,7 +6,7 @@
 
 import express from 'express';
 import cors from 'cors';
-import { config, loadServiceAccount } from './config.js';
+import { config, getMissingEnv, loadServiceAccount } from './config.js';
 import { logger } from './logger.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { recordsRouter } from './routes/records.js';
@@ -37,6 +37,17 @@ app.use((req, _res, next) => {
 // Returns { ok: true, ... } on success, or { ok: false, error } (HTTP 500) with
 // a readable reason. Never throws, so a misconfig yields a clean JSON response.
 app.get('/api/health', async (_req, res) => {
+  // 0. Required env vars present? (read lazily so a missing one never crashes import)
+  const missing = getMissingEnv();
+  if (missing.length) {
+    return res.status(500).json({
+      ok: false,
+      service: 'scs-import-do',
+      check: 'env',
+      error: `Missing required environment variable(s): ${missing.join(', ')}. Set them in the Vercel project settings and redeploy.`,
+    });
+  }
+
   // 1. Credentials present + parseable (lazy load)?
   let serviceAccount: string;
   try {
